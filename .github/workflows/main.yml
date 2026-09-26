@@ -1,0 +1,33 @@
+name: Main
+on:
+  workflow_dispatch:
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: macos-latest
+          arch: arm64
+          runner: macos-latest
+          expander_leg: macos-latest--arm64
+    runs-on: ${{ matrix.runner }}
+    name: Build and test [${{ matrix.expander_leg }}]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+          # Temurin publishes no JDK 11 build for Windows on ARM64.
+          # Use the Microsoft Build of OpenJDK there, which does ship one.
+        distribution: ${{ (matrix.os == 'windows-latest' && matrix.arch == 
+          'arm64') && 'microsoft' || 'temurin' }}
+        java-version: 11
+        architecture: ${{ matrix.arch == 'arm64' && 'aarch64' || 'x64' }}
+    - uses: gradle/gradle-build-action@v2
+    - name: Build project
+      run: ./gradlew build -x test
+    - name: Run tests
+      run: ./gradlew test
+    timeout-minutes: 150
