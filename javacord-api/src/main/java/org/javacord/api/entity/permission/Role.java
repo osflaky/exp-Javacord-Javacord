@@ -1,0 +1,456 @@
+package org.javacord.api.entity.permission;
+
+import org.javacord.api.entity.Deletable;
+import org.javacord.api.entity.DiscordEntity;
+import org.javacord.api.entity.Icon;
+import org.javacord.api.entity.Mentionable;
+import org.javacord.api.entity.Nameable;
+import org.javacord.api.entity.Permissionable;
+import org.javacord.api.entity.UpdatableFromCache;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.server.ServerUpdater;
+import org.javacord.api.entity.user.User;
+import org.javacord.api.listener.server.role.RoleAttachableListenerManager;
+
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.EnumSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+/**
+ * This class represents a Discord role, e.g. "moderator".
+ */
+public interface Role extends DiscordEntity, Mentionable, Nameable, Deletable, Permissionable,
+        Comparable<Role>, UpdatableFromCache<Role>, RoleAttachableListenerManager {
+
+    /**
+     * Gets the server of the role.
+     *
+     * @return The server of the role.
+     */
+    Server getServer();
+
+    /**
+     * Gets the role tags of the role.
+     *
+     * @return The role tags of the role.
+     */
+    Optional<RoleTags> getRoleTags();
+
+    /**
+     * Gets the real position of the role.
+     *
+     * <p>Will return <code>-1</code> if the Role got deleted.
+     *
+     * @return The real position of the role.
+     */
+    default int getPosition() {
+        return getServer().getRoles().indexOf(this);
+    }
+
+    /**
+     * Gets the raw position of the role.
+     *
+     * <p>This is the position that gets send by discord. It might not be unique and there might be a gap between
+     * roles.
+     *
+     * @return The raw position of the role.
+     */
+    int getRawPosition();
+
+    /**
+     * Gets the color of the role.
+     *
+     * @return The color of the role.
+     */
+    Optional<Color> getColor();
+
+    /**
+     * Gets the hash of the role's icon.
+     *
+     * @return The hash of the role's icon.
+     */
+    Optional<String> getIconHash();
+
+    /**
+     * Gets the Icon of the role.
+     *
+     * @return The role's icon.
+     */
+    Optional<Icon> getIcon();
+
+    /**
+     * Gets the Icon of the role.
+     *
+     * @param size The size of the image, must be a power of 2 between 16 and 4096.
+     * @return The role's icon in the given size.
+     */
+    Optional<Icon> getIcon(int size);
+
+    /**
+     * Gets the unicode emoji role icon.
+     *
+     * @return The unicode emoji role icon.
+     */
+    Optional<String> getUnicodeEmojiIcon();
+
+    /**
+     * Check if this role is mentionable.
+     *
+     * @return Whether this role is mentionable or not.
+     */
+    boolean isMentionable();
+
+    /**
+     * Check if this role is pinned in the user listing (sometimes called "hoist").
+     *
+     * @return Whether this role is pinned in the user listing or not.
+     */
+    boolean isDisplayedSeparately();
+
+    /**
+     * Gets all users who have this role.
+     *
+     * @return All users who have this role.
+     */
+    Set<User> getUsers();
+
+    /**
+     * Checks whether the specified user has this role.
+     *
+     * @param user the user to check
+     * @return true if the user has this role; false otherwise
+     */
+    boolean hasUser(User user);
+
+    /**
+     * Gets the permissions of the role.
+     *
+     * @return The permissions of the role.
+     */
+    Permissions getPermissions();
+
+    /**
+     * Gets the flags of the role.
+     *
+     * @return The flags of the role.
+     */
+    EnumSet<RoleFlag> getFlags();
+
+    /**
+     * Checks if this role is managed by an integration.
+     *
+     * @return Whether this role is managed by an integration or not.
+     */
+    boolean isManaged();
+
+    /**
+     * Checks if the role is the @everyone role.
+     *
+     * @return Whether the role is the @everyone role or not.
+     */
+    default boolean isEveryoneRole() {
+        return getId() == getServer().getId();
+    }
+
+    /**
+     * Gets the updater for this role.
+     *
+     * @return The updater for this role.
+     */
+    default RoleUpdater createUpdater() {
+        return new RoleUpdater(this);
+    }
+
+    /**
+     * Updates the name of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param name The new name of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateName(String name) {
+        return createUpdater().setName(name).update();
+    }
+
+    /**
+     * Updates the permissions of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param permissions The new permissions of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updatePermissions(Permissions permissions) {
+        return createUpdater().setPermissions(permissions).update();
+    }
+
+    /**
+     * Updates the color of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param color The new color of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateColor(Color color) {
+        return createUpdater().setColor(color).update();
+    }
+
+    /**
+     * Updates the display separately flag of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param displaySeparately The new display separately flag of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateDisplaySeparatelyFlag(boolean displaySeparately) {
+        return createUpdater().setDisplaySeparatelyFlag(displaySeparately).update();
+    }
+
+    /**
+     * Updates the mentionable flag of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param mentionable The new mentionable flag of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateMentionableFlag(boolean mentionable) {
+        return createUpdater().setMentionableFlag(mentionable).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     * This method assumes the file type is "png"!
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(BufferedImage icon) {
+        return createUpdater().setIcon(icon).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @param fileType The type of the icon, e.g. "png" or "jpg".
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(BufferedImage icon, String fileType) {
+        return createUpdater().setIcon(icon, fileType).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(File icon) {
+        return createUpdater().setIcon(icon).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(Icon icon) {
+        return createUpdater().setIcon(icon).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(URL icon) {
+        return createUpdater().setIcon(icon).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     * This method assumes the file type is "png"!
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(byte[] icon) {
+        return createUpdater().setIcon(icon).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @param fileType The type of the icon, e.g. "png" or "jpg".
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(byte[] icon, String fileType) {
+        return createUpdater().setIcon(icon, fileType).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     * This method assumes the file type is "png"!
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(InputStream icon) {
+        return createUpdater().setIcon(icon).update();
+    }
+
+    /**
+     * Updates the icon of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @param icon The new icon of the role.
+     * @param fileType The type of the icon, e.g. "png" or "jpg".
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> updateIcon(InputStream icon, String fileType) {
+        return createUpdater().setIcon(icon, fileType).update();
+    }
+
+    /**
+     * Removes the icon of the role.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link RoleUpdater} from {@link #createUpdater()} which provides a better performance!
+     *
+     * @return A future to check if the update was successful.
+     */
+    default CompletableFuture<Void> removeIcon() {
+        return createUpdater().removeIcon().update();
+    }
+
+    /**
+     * Adds the role to the given user.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link ServerUpdater} from {@link Server#createUpdater()} which provides a better performance!
+     *
+     * @param user The user the role should be added to.
+     * @return A future to check if the update was successful.
+     * @see Server#addRoleToUser(User, Role)
+     */
+    default CompletableFuture<Void> addUser(User user) {
+        return addUser(user, null);
+    }
+
+    /**
+     * Adds the role to the given user.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link ServerUpdater} from {@link Server#createUpdater()} which provides a better performance!
+     *
+     * @param user The user the role should be added to.
+     * @param reason The audit log reason for this update.
+     * @return A future to check if the update was successful.
+     * @see Server#addRoleToUser(User, Role, String)
+     */
+    default CompletableFuture<Void> addUser(User user, String reason) {
+        return getServer().addRoleToUser(user, this, reason);
+    }
+
+    /**
+     * Removes the role from the given user.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link ServerUpdater} from {@link Server#createUpdater()} which provides a better performance!
+     *
+     * @param user The user the role should be removed from.
+     * @return A future to check if the update was successful.
+     * @see Server#removeRoleFromUser(User, Role)
+     */
+    default CompletableFuture<Void> removeUser(User user) {
+        return removeUser(user, null);
+    }
+
+    /**
+     * Removes the role from the given user.
+     *
+     * <p>If you want to update several settings at once, it's recommended to use the
+     * {@link ServerUpdater} from {@link Server#createUpdater()} which provides a better performance!
+     *
+     * @param user The user the role should be removed from.
+     * @param reason The audit log reason for this update.
+     * @return A future to check if the update was successful.
+     * @see Server#removeRoleFromUser(User, Role, String)
+     */
+    default CompletableFuture<Void> removeUser(User user, String reason) {
+        return getServer().removeRoleFromUser(user, this, reason);
+    }
+
+    /**
+     * Gets the allowed permissions of the role.
+     *
+     * @return The allowed permissions of the role.
+     */
+    default Set<PermissionType> getAllowedPermissions() {
+        return getPermissions().getAllowedPermission();
+    }
+
+    /**
+     * Gets the unset permissions of the role.
+     *
+     * @return The unset permissions of the role.
+     */
+    default Set<PermissionType> getUnsetPermissions() {
+        return getPermissions().getUnsetPermissions();
+    }
+
+    @Override
+    default String getMentionTag() {
+        return isEveryoneRole() ? "@everyone" : "<@&" + getIdAsString() + ">";
+    }
+
+    @Override
+    default Optional<Role> getCurrentCachedInstance() {
+        return getApi().getServerById(getServer().getId()).flatMap(server -> server.getRoleById(getId()));
+    }
+
+}

@@ -1,0 +1,18 @@
+// remove the main JAR from the archives artifacts
+configurations.archives.artifacts.clear()
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+shadowJar {
+    classifier 'shaded'
+}
+
+artifacts {
+    archives shadowJar
+}
+
+// disable the jar task but do not remove it,
+// this is not nicely compatible with composite builds
+jar {
+    enabled false
+}
